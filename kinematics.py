@@ -10,7 +10,19 @@ class Kinematics:
         self.time = time
 
     def go_to_level2(self, arm):
-        self.inverse_kinematics(arm, 0.3, 1)
+        arm.go_to(0, np.pi/4)
+        self.time.sleep(2)
+        arm.go_to(5, -np.pi/2.8)
+        self.time.sleep(2)
+        self.inverse_kinematics(arm, x = 0.45, z = 1)
+        arm.go_to(0, -np.pi/18)
+
+    def go_to_level3(self, arm):
+        arm.go_to(0, np.pi/18)
+        self.time.sleep(2)
+        arm.go_to(5, -np.pi/4)
+        self.time.sleep(2)
+        self.inverse_kinematics(arm, x = 0.3, z = 1.1)
 
     def inverse_kinematics(self, arm, x, z):
         '''
