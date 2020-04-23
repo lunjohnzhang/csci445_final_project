@@ -74,7 +74,6 @@ class ParticleFilter:
         self.particles[:, 2] += np.random.normal(0, self.theta_sigma, self.num_particles)
         self.particles[:, 2] = np.fmod(self.particles[:, 2], 2 * np.pi)
 
-<<<<<<< HEAD
     def measure(self, z, servo_angle_in_rad):
         for particle in self._particles:
             # compute what the distance should be, if particle position is accurate
@@ -98,11 +97,6 @@ class ParticleFilter:
         probabilities -= a
         for j in range(0, len(probabilities)):
             self._particles[j].ln_p = probabilities[j]
-=======
-        # Add x,y noise, even though we only turned.
-        self.particles[:, 0] += np.random.normal(0, self.cartesian_sigma, self.num_particles)
-        self.particles[:, 1] += np.random.normal(0, self.cartesian_sigma, self.num_particles)
->>>>>>> fdf392bbb95a1d4c46f3f51e430b9e1b0afc38ce
 
     def forward(self, distance):
         '''Record that the robot moved (forward) by distance.'''
