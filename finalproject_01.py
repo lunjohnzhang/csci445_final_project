@@ -6,6 +6,7 @@ import lab8_map
 import lab10_map
 import particle_filter
 import rrt
+import kinematics
 import numpy as np
 
 localize = True  # testing
@@ -39,6 +40,8 @@ class Run:
         self.pf = particle_filter.ParticleFilter(the_map=self.map_localize)
 
         self.joint_angles = np.zeros(7)
+
+        self.kinematics = kinematics.Kinematics(self.time)
 
     def sleep(self, time_in_sec):
         """Sleeps for the specified amount of time while keeping odometry up-to-date
@@ -108,6 +111,9 @@ class Run:
         ])
         self.visualize()
 
+
+
+
         if localize:
             # Localize
             angle = math.pi / 3
@@ -148,7 +154,7 @@ class Run:
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
-        x_goal = self.rrt.nearest_neighbor((150, 40))
+        x_goal = self.rrt.nearest_neighbor((155, 65))
         path = self.rrt.shortest_path(x_goal)
 
         for v in self.rrt.T:
@@ -188,3 +194,8 @@ class Run:
         # --------------------------------------Wait ARM part----------------------------------------
 
         input("wait for arm")
+        self.kinematics.grab(self.arm)
+        self.kinematics.go_to_level0(self.arm)
+        self.kinematics.go_to_level1(self.arm)
+
+        
