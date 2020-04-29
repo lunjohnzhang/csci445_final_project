@@ -4,6 +4,7 @@ import odometry
 import pid_controller
 import lab8_map
 import particle_filter
+import kinematics
 
 import numpy as np
 
@@ -19,6 +20,7 @@ class Run:
         self.servo = factory.create_servo()
         self.sonar = factory.create_sonar()
         self.arm = factory.create_kuka_lbr4p()
+        self.kinematics = kinematics.Kinematics(self.time)
         self.virtual_create = factory.create_virtual_create()
         # self.virtual_create = factory.create_virtual_create("192.168.1.XXX")
         self.odometry = odometry.Odometry()
@@ -109,21 +111,25 @@ class Run:
         self.virtual_create.enable_buttons()
         self.visualize()
 
-        while True:
-            b = self.virtual_create.get_last_button()
-            if b == self.virtual_create.Button.MoveForward:
-                self.forward()
-                self.visualize()
-            elif b == self.virtual_create.Button.TurnLeft:
-                self.go_to_angle(self.odometry.theta + math.pi / 2)
-                self.visualize()
-            elif b == self.virtual_create.Button.TurnRight:
-                self.go_to_angle(self.odometry.theta - math.pi / 2)
-                self.visualize()
-            elif b == self.virtual_create.Button.Sense:
-                distance = self.sonar.get_distance()
-                print(distance)
-                self.pf.measure(distance, 0)
-                self.visualize()
+        # self.kinematics.go_to_level3(self.arm)
+        self.kinematics.pick_up_cup(self.arm, 1.5, 2.6)
+        self.time.sleep(30)
 
-            self.time.sleep(0.01)
+        # while True:
+        #     b = self.virtual_create.get_last_button()
+        #     if b == self.virtual_create.Button.MoveForward:
+        #         self.forward()
+        #         self.visualize()
+        #     elif b == self.virtual_create.Button.TurnLeft:
+        #         self.go_to_angle(self.odometry.theta + math.pi / 2)
+        #         self.visualize()
+        #     elif b == self.virtual_create.Button.TurnRight:
+        #         self.go_to_angle(self.odometry.theta - math.pi / 2)
+        #         self.visualize()
+        #     elif b == self.virtual_create.Button.Sense:
+        #         distance = self.sonar.get_distance()
+        #         print(distance)
+        #         self.pf.measure(distance, 0)
+        #         self.visualize()
+
+        #     self.time.sleep(0.01)

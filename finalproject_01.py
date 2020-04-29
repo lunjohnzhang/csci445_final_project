@@ -4,8 +4,9 @@ import odometry
 import pid_controller
 import lab8_map
 import lab10_map
-import particle_filter
+import particle_filter_01
 import rrt
+import kinematics
 import numpy as np
 
 localize = True  # testing
@@ -23,6 +24,7 @@ class Run:
         self.sonar = factory.create_sonar()
 
         self.arm = factory.create_kuka_lbr4p()
+        self.kinematics = kinematics.Kinematics(self.time)
 
         self.virtual_create = factory.create_virtual_create()
         #self.virtual_create = factory.create_virtual_create("192.168.1.177")
@@ -36,7 +38,7 @@ class Run:
         # self.pidTheta = pid_controller.PIDController(200, 0, 100, [-10, 10], [-50, 50], is_angle=True)
         self.pidTheta = pid_controller.PIDController(300, 5, 50, [-10, 10], [-200, 200], is_angle=True)
         # TODO identify good particle filter parameters
-        self.pf = particle_filter.ParticleFilter(the_map=self.map_localize)
+        self.pf = particle_filter_01.ParticleFilter(the_map=self.map_localize)
 
         self.joint_angles = np.zeros(7)
 
@@ -142,14 +144,16 @@ class Run:
         # self.odometry.theta =
         # print('one more rotation')
         self.go_to_angle(self.odometry.theta + angle)
-        input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
+        # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
         # --------------------------------------Path Finder----------------------------------------
 
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
-        self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
-        x_goal = self.rrt.nearest_neighbor((150, 40))
-        path = self.rrt.shortest_path(x_goal)
+        self.rrt.build((location[0] * 100, 300 - location[1] * 100), 1000, 10)
+        x_goal = (150, 40)
+        x_goal_nn = self.rrt.nearest_neighbor(x_goal) # change goal here
+        path = self.rrt.shortest_path(x_goal_nn)
+        path.append(rrt.Vertex(x_goal))
 
         for v in self.rrt.T:
             for u in v.neighbors:
@@ -160,7 +164,7 @@ class Run:
 
         self.map_path.save("configspace_rrt.png")
 
-        input('input: path found and configspace_rrt.png saved')
+        # input('input: path found and configspace_rrt.png saved')
         # --------------------------------------Move----------------------------------------
         base_speed = 100
 
@@ -186,5 +190,7 @@ class Run:
         self.create.drive_direct(0, 0)
         self.time.sleep(10)
         # --------------------------------------Wait ARM part----------------------------------------
-
+        self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
+        self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
         input("wait for arm")
+        self.time.sleep(10)

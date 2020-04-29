@@ -8,6 +8,20 @@ class Kinematics:
         self.curr_theta1 = 0
         self.curr_theta2 = 0
         self.time = time
+        self.arm_x = 1.6001 # m
+        self.arm_y = 3.3999 # m
+
+    def pick_up_cup(self, arm, curr_x, curr_y):
+        # calculate delta theta with the robot arm
+        delta_theta = np.arctan2(curr_x - self.arm_x, self.arm_y - curr_y)
+        print(np.degrees(delta_theta))
+        arm.go_to(0, delta_theta)
+
+        # calculate delta dist with the robot arm
+        delta_dist = np.linalg.norm(np.array([curr_x, curr_y]) - np.array([self.arm_x, self.arm_y]))
+        print(delta_dist)
+        arm.go_to(5, np.pi/3)
+        self.inverse_kinematics(arm, x = -delta_dist, z = 0.5) # plus a constant for calibration
 
     def go_to_level2(self, arm):
         arm.go_to(0, np.pi/4)
