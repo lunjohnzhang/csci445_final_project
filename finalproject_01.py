@@ -42,6 +42,8 @@ class Run:
 
         self.joint_angles = np.zeros(7)
 
+        self.kinematics = kinematics.Kinematics(self.time)
+
     def sleep(self, time_in_sec):
         """Sleeps for the specified amount of time while keeping odometry up-to-date
         Args:
@@ -110,6 +112,9 @@ class Run:
         ])
         self.visualize()
 
+
+
+
         if localize:
             # Localize
             angle = math.pi / 3
@@ -149,11 +154,9 @@ class Run:
 
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
-        self.rrt.build((location[0] * 100, 300 - location[1] * 100), 1000, 10)
-        x_goal = (150, 40)
-        x_goal_nn = self.rrt.nearest_neighbor(x_goal) # change goal here
-        path = self.rrt.shortest_path(x_goal_nn)
-        path.append(rrt.Vertex(x_goal))
+        self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
+        x_goal = self.rrt.nearest_neighbor((155, 65))
+        path = self.rrt.shortest_path(x_goal)
 
         for v in self.rrt.T:
             for u in v.neighbors:
@@ -193,4 +196,12 @@ class Run:
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
         input("wait for arm")
+<<<<<<< HEAD
         self.time.sleep(10)
+=======
+        self.kinematics.grab(self.arm)
+        self.kinematics.go_to_level0(self.arm)
+        self.kinematics.go_to_level1(self.arm)
+
+        
+>>>>>>> fa59cc8d659d2177801c008b9694f15fe1678854

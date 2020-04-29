@@ -1,4 +1,5 @@
 import numpy as np
+import math
 
 class Kinematics:
     def __init__(self, time):
@@ -22,6 +23,67 @@ class Kinematics:
         print(delta_dist)
         arm.go_to(5, np.pi/3)
         self.inverse_kinematics(arm, x = -delta_dist, z = 0.5) # plus a constant for calibration
+
+    def grab(self, arm):
+        print("grab the bottle")
+        arm.go_to(1, math.radians(90))
+        arm.go_to(3, math.radians(15))
+        arm.go_to(5, math.radians(-15))
+        arm.close_gripper()
+        self.time.sleep(5)
+        arm.go_to(1, math.radians(0))
+        arm.go_to(3, math.radians(0))
+        arm.go_to(5, math.radians(0))
+        self.time.sleep(2)
+
+    def go_to_level0(self, arm):
+        print("move to first floor")
+        arm.go_to(0, math.radians(-90))
+        arm.go_to(1, math.radians(90))
+        # self.time.sleep(1)
+        # arm.go_to(3, math.radians(30))
+        self.time.sleep(1)
+        arm.go_to(2, math.radians(90))
+        self.time.sleep(1)
+        arm.go_to(3, math.radians(-60))
+        self.time.sleep(1)
+        arm.go_to(4, math.radians(90))
+        # self.time.sleep(1)
+        # arm.go_to(1, math.radians(95))
+        # arm.go_to(5, math.radians(5))
+
+        arm.open_gripper()
+        self.time.sleep(5)
+
+        arm.go_to(0, math.radians(0))
+        arm.go_to(1, math.radians(0))
+        arm.go_to(2, math.radians(0))
+        arm.go_to(3, math.radians(0))
+        arm.go_to(4, math.radians(0))
+        self.time.sleep(2)
+
+    def go_to_level1(self, arm):
+        print("move to second floor")
+        arm.go_to(0, math.radians(-90))
+        arm.go_to(3, math.radians(100))
+        arm.go_to(2, math.radians(-45))
+        self.time.sleep(1)
+        arm.go_to(2, math.radians(-65))
+        self.time.sleep(1)
+        arm.go_to(3, math.radians(110))
+        arm.go_to(5, math.radians(-20))
+        # self.time.sleep(1)
+        
+        arm.open_gripper()
+        self.time.sleep(5)
+        arm.go_to(2, math.radians(-45))
+        self.time.sleep(1)
+
+        arm.go_to(0, math.radians(0))
+        arm.go_to(3, math.radians(0))
+        arm.go_to(2, math.radians(0))
+        arm.go_to(5, math.radians(0))
+        self.time.sleep(2)
 
     def go_to_level2(self, arm):
         arm.go_to(0, np.pi/4)
