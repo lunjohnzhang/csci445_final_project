@@ -196,12 +196,6 @@ class Run:
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
         input("wait for arm")
-<<<<<<< HEAD
-        self.time.sleep(10)
-=======
         self.kinematics.grab(self.arm)
         self.kinematics.go_to_level0(self.arm)
         self.kinematics.go_to_level1(self.arm)
-
-        
->>>>>>> fa59cc8d659d2177801c008b9694f15fe1678854
