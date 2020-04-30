@@ -29,6 +29,11 @@ class Kinematics:
         arm.go_to(5, delta_cali) # make the crawler horizontal with the ground
         arm.close_gripper()
         self.time.sleep(5)
+        arm.go_to(0, math.radians(0))
+        arm.go_to(1, math.radians(0))
+        arm.go_to(3, math.radians(0))
+        arm.go_to(5, math.radians(0))
+
 
     def grab(self, arm):
         print("grab the bottle")
@@ -92,12 +97,22 @@ class Kinematics:
         self.time.sleep(2)
 
     def go_to_level2(self, arm):
-        arm.go_to(0, np.pi/4)
+        arm.go_to(0, np.pi/2)
         self.time.sleep(2)
         arm.go_to(5, -np.pi/2.8)
         self.time.sleep(2)
         self.inverse_kinematics(arm, x = 0.45, z = 1)
+        arm.go_to(0, np.pi/4)
+        self.time.sleep(2)
         arm.go_to(0, -np.pi/18)
+        arm.open_gripper()
+        self.time.sleep(5)
+
+        arm.go_to(0, np.pi/2)
+        arm.go_to(0, math.radians(0))
+        arm.go_to(1, math.radians(0))
+        arm.go_to(3, math.radians(0))
+        arm.go_to(5, math.radians(0))
 
     def go_to_level3(self, arm):
         arm.go_to(0, np.pi/18)
@@ -105,6 +120,13 @@ class Kinematics:
         arm.go_to(5, -np.pi/4)
         self.time.sleep(2)
         self.inverse_kinematics(arm, x = 0.3, z = 1.1)
+        arm.open_gripper()
+        self.time.sleep(5)
+
+        arm.go_to(0, math.radians(0))
+        arm.go_to(1, math.radians(0))
+        arm.go_to(3, math.radians(0))
+        arm.go_to(5, math.radians(0))
 
     def inverse_kinematics(self, arm, x, z):
         '''
