@@ -24,7 +24,7 @@ class Kinematics:
         # calculate delta dist with the robot arm
         delta_dist = np.linalg.norm(np.array([curr_x, curr_y]) - np.array([self.arm_x, self.arm_y]))
         print("delta_dist = %.3f" % delta_dist)
-        self.inverse_kinematics(arm, x = -delta_dist+0.3, z = 0.1) # plus a constant for calibration
+        self.inverse_kinematics(arm, x = -delta_dist+0.3, z = 0.15) # plus a constant for calibration
         delta_cali = np.pi/2 - (self.curr_theta1 + self.curr_theta2)
         arm.go_to(5, delta_cali) # make the crawler horizontal with the ground
         arm.close_gripper()

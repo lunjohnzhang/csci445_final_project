@@ -157,7 +157,7 @@ class Run:
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
-        x_goal = (152, 65)
+        x_goal = (152, 66)
         x_goal_nn = self.rrt.nearest_neighbor(x_goal)
         path = self.rrt.shortest_path(x_goal_nn)
         path.append(rrt.Vertex(x_goal))
