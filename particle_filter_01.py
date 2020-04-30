@@ -3,7 +3,7 @@ import scipy.stats
 
 
 class ParticleFilter:
-    def __init__(self, the_map=None, num_particles=3000, sensor_sigma=0.15,
+    def __init__(self, the_map=None, num_particles=3000, sensor_sigma=0.3,
                  cartesian_sigma=0.05, theta_sigma=np.pi / 48.):
         self.num_particles = num_particles
         self.drawn_particles = 500

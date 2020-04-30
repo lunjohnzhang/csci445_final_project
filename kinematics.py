@@ -13,16 +13,21 @@ class Kinematics:
         self.arm_y = 3.3999 # m
 
     def pick_up_cup(self, arm, curr_x, curr_y):
+        arm.close_gripper()
+        self.time.sleep(5)
+
         # calculate delta theta with the robot arm
         delta_theta = np.arctan2(curr_x - self.arm_x, self.arm_y - curr_y)
-        print(np.degrees(delta_theta))
+        print("delta_theta = %.3f" % (np.degrees(delta_theta)))
         arm.go_to(0, delta_theta)
 
         # calculate delta dist with the robot arm
         delta_dist = np.linalg.norm(np.array([curr_x, curr_y]) - np.array([self.arm_x, self.arm_y]))
-        print(delta_dist)
+        print("delta_dist = %.3f" % delta_dist)
         arm.go_to(5, np.pi/3)
-        self.inverse_kinematics(arm, x = -delta_dist, z = 0.5) # plus a constant for calibration
+        self.inverse_kinematics(arm, x = -delta_dist+0.05, z = 0.45) # plus a constant for calibration
+        arm.close_gripper()
+        self.time.sleep(5)
 
     def grab(self, arm):
         print("grab the bottle")
@@ -73,7 +78,7 @@ class Kinematics:
         arm.go_to(3, math.radians(110))
         arm.go_to(5, math.radians(-20))
         # self.time.sleep(1)
-        
+
         arm.open_gripper()
         self.time.sleep(5)
         arm.go_to(2, math.radians(-45))
@@ -105,8 +110,11 @@ class Kinematics:
         Given position of end effector, compute angle of theta1 and theta2
         '''
         r = np.sqrt(x**2 + (z-self.calibration)**2)
+        print("r = %.3f" % r)
         alpha = np.arccos((self.l1**2 + self.l2**2 - r**2)/(2 * self.l1 * self.l2)) # [0, pi]
+        print("cos(alpha) = %.3f" % ((self.l1**2 + self.l2**2 - r**2)/(2 * self.l1 * self.l2)))
         beta = np.arccos((r**2 + self.l1**2 - self.l2**2)/(2 * self.l1 * r)) # [0, pi]
+        print("cos(beta) = %.3f" % ((r**2 + self.l1**2 - self.l2**2)/(2 * self.l1 * r)))
         phi = np.arctan2(x, z-self.calibration)
         theta1s = -1 * np.array([phi + beta, phi - beta])
         theta2s = np.array([np.pi - alpha, alpha - np.pi])

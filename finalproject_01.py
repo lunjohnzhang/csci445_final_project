@@ -69,6 +69,7 @@ class Run:
             output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
             self.create.drive_direct(int(+output_theta), int(-output_theta))
             self.sleep(0.01)
+            # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.create.drive_direct(0, 0)
         self.pf.turn(self.odometry.theta - old_theta)
 
@@ -117,9 +118,9 @@ class Run:
 
         if localize:
             # Localize
-            angle = math.pi / 3
+            angle = math.pi / 15
             counter = 0
-            while (np.array(self.pf.variance()) > np.array([0.02, 0.02])).any():
+            while (np.array(self.pf.variance()) > np.array([0.01, 0.01])).any():
                 distance = self.sonar.get_distance()
                 self.go_to_angle(self.odometry.theta + angle)
 
@@ -155,8 +156,10 @@ class Run:
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
-        x_goal = self.rrt.nearest_neighbor((155, 65))
-        path = self.rrt.shortest_path(x_goal)
+        x_goal = (155, 20)
+        x_goal_nn = self.rrt.nearest_neighbor(x_goal)
+        path = self.rrt.shortest_path(x_goal_nn)
+        path.append(rrt.Vertex(x_goal))
 
         for v in self.rrt.T:
             for u in v.neighbors:
@@ -183,6 +186,8 @@ class Run:
                     theta = math.atan2(math.sin(self.odometry.theta), math.cos(self.odometry.theta))
                     output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
                     self.create.drive_direct(int(base_speed + output_theta), int(base_speed - output_theta))
+                    # move virtual robot
+                    self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
                     # print(output_theta)
                     # print("Robot's coordinates[{},{},{}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
                     # print("Actual coordinates[{},{},{}]".format(self.odometry.y, -self.odometry.x, math.degrees(self.odometry.theta)-90))
@@ -191,11 +196,15 @@ class Run:
                     if distance < 0.1:
                         break
         self.create.drive_direct(0, 0)
-        self.time.sleep(10)
+        self.time.sleep(2)
+        # go to a specified angle at the end of the path
+        self.go_to_angle(-np.pi/2)
+        self.time.sleep(2)
         # --------------------------------------Wait ARM part----------------------------------------
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
+        self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
+        print("Robot at [%.3f, %.3f]" % (self.odometry.x, self.odometry.y))
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
         input("wait for arm")
-        self.kinematics.grab(self.arm)
         self.kinematics.go_to_level0(self.arm)
         self.kinematics.go_to_level1(self.arm)
