@@ -112,7 +112,7 @@ class Run:
         self.visualize()
 
         # self.kinematics.go_to_level3(self.arm)
-        self.kinematics.pick_up_cup(self.arm, 1.5, 2.9)
+        self.kinematics.pick_up_cup(self.arm, 1.5, 2.5)
         self.time.sleep(30)
 
         # while True:

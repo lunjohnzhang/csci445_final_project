@@ -9,7 +9,7 @@ import rrt
 import kinematics
 import numpy as np
 
-localize = True  # testing
+localize = False  # testing
 
 
 class Run:
@@ -143,6 +143,7 @@ class Run:
 
             location = self.pf.mean()
         else:
+            angle = 0
             location = [1, 0.5]
 
         self.odometry.x = location[0]
@@ -156,7 +157,7 @@ class Run:
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
-        x_goal = (155, 20)
+        x_goal = (152, 65)
         x_goal_nn = self.rrt.nearest_neighbor(x_goal)
         path = self.rrt.shortest_path(x_goal_nn)
         path.append(rrt.Vertex(x_goal))
@@ -193,7 +194,7 @@ class Run:
                     # print("Actual coordinates[{},{},{}]".format(self.odometry.y, -self.odometry.x, math.degrees(self.odometry.theta)-90))
 
                     distance = math.sqrt(math.pow(goal_x - self.odometry.x, 2) + math.pow(goal_y - self.odometry.y, 2))
-                    if distance < 0.1:
+                    if distance < 0.05:
                         break
         self.create.drive_direct(0, 0)
         self.time.sleep(2)
@@ -205,6 +206,6 @@ class Run:
         self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         print("Robot at [%.3f, %.3f]" % (self.odometry.x, self.odometry.y))
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
-        input("wait for arm")
+        # input("wait for arm")
         self.kinematics.go_to_level0(self.arm)
-        self.kinematics.go_to_level1(self.arm)
+        # self.kinematics.go_to_level1(self.arm)
