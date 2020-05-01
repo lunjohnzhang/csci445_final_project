@@ -76,7 +76,7 @@ class Kinematics:
             i = i + 10
             arm.go_to(0, math.radians(-i))
             self.time.sleep(0.05)
-        for i in range(60,80):
+        for i in range(50,80):
             i = i + 5
             arm.go_to(1, math.radians(i))
             self.time.sleep(0.05)
@@ -86,9 +86,22 @@ class Kinematics:
             arm.go_to(2, math.radians(-i))
             arm.go_to(4, math.radians(i))
             self.time.sleep(0.01)
+        # arm.go_to(5, math.radians(20))
+        for i in range(25,50):
+            i = i + 5
+            arm.go_to(3, math.radians(i))
+            self.time.sleep(0.01)
         
         self.time.sleep(5)
-        self.inverse_kinematics(arm, x=-0.68, z = -0.05)
+
+        # self.inverse_kinematics(arm, x=-0.68, z = -0.05)
+        # self.time.sleep(5)
+        # self.inverse_kinematics(arm, x=-0.68, z = -0.06)
+        # self.time.sleep(5)
+        self.inverse_kinematics(arm, x=-0.68, z = -0.07)
+        # self.time.sleep(5)
+
+
 
        
 
