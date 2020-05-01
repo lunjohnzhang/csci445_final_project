@@ -81,7 +81,7 @@ class Kinematics:
             arm.go_to(1, math.radians(i))
             self.time.sleep(0.05)
         self.time.sleep(2)
-        for i in range(0,90):
+        for i in range(0,85):
             i = i + 5
             arm.go_to(2, math.radians(-i))
             arm.go_to(4, math.radians(i))
