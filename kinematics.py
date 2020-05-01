@@ -53,13 +53,44 @@ class Kinematics:
         self.time.sleep(2)
 
     def go_to_level0(self, arm):
+        # arm.go_to(0, math.radians(-45))
+        # self.time.sleep(1)
+        # arm.go_to(1, math.radians(70))
+        # self.time.sleep(1)
+        # arm.go_to(3, math.radians(15))
+        # self.time.sleep(1)
+        # arm.go_to(5, math.radians(-15))
+        # self.time.sleep(5)
 
-        arm.go_to(0, math.radians(-90))
-        arm.go_to(2, math.radians(-90))
-        arm.go_to(4, math.radians(90))
+        # arm.go_to(1, math.radians(-45))
+        # self.time.sleep(5)
+        # arm.go_to(3, math.radians(15))
+        arm.go_to(5, math.radians(0))
+        for i in range(0,20):
+            i = i + 5
+            arm.go_to(1, math.radians(80 - i))
+            arm.go_to(3, math.radians(45 - i))
+            self.time.sleep(0.05)
+        # arm.go_to(1, math.radians(60))
+        for i in range(0,80):
+            i = i + 10
+            arm.go_to(0, math.radians(-i))
+            self.time.sleep(0.05)
+        for i in range(60,80):
+            i = i + 5
+            arm.go_to(1, math.radians(i))
+            self.time.sleep(0.05)
+        self.time.sleep(2)
+        for i in range(0,90):
+            i = i + 5
+            arm.go_to(2, math.radians(-i))
+            arm.go_to(4, math.radians(i))
+            self.time.sleep(0.01)
+        
         self.time.sleep(5)
-        self.inverse_kinematics(arm, x=-0.7, z = -0.05)
-        self.time.sleep(5)
+        self.inverse_kinematics(arm, x=-0.68, z = -0.05)
+
+       
 
         arm.open_gripper()
         self.time.sleep(5)
@@ -93,6 +124,7 @@ class Kinematics:
         arm.go_to(4, math.radians(0))
         arm.go_to(5, math.radians(0))
         self.time.sleep(2)
+
 
     def go_to_level2(self, arm):
         arm.go_to(0, np.pi/2)
