@@ -1,10 +1,9 @@
 import numpy as np
-np.random.seed(0)
 import scipy.stats
 
 
 class ParticleFilter:
-    def __init__(self, the_map=None, num_particles=3000, sensor_sigma=0.3,
+    def __init__(self, num_particles=3000, sensor_sigma=0.1, the_map=None,
                  cartesian_sigma=0.05, theta_sigma=np.pi / 48.):
         self.num_particles = num_particles
         self.drawn_particles = 500
@@ -16,7 +15,10 @@ class ParticleFilter:
         self.cartesian_sigma = cartesian_sigma
         self.theta_sigma = theta_sigma
 
-        self.particles = (np.random.uniform(low=self.num_particles * [0, 0, 0], high=self.num_particles * [3, 3, 2 * np.pi]).reshape(self.num_particles, 3))
+        self.particles = (np.random.uniform(
+            low=self.num_particles * [0, 0, 0],
+            high=self.num_particles * [3, 3, 2 * np.pi])
+                          .reshape(self.num_particles, 3))
 
     def mean(self):
         '''Compute the mean of the particle positions.
@@ -72,29 +74,9 @@ class ParticleFilter:
         self.particles[:, 2] += np.random.normal(0, self.theta_sigma, self.num_particles)
         self.particles[:, 2] = np.fmod(self.particles[:, 2], 2 * np.pi)
 
-    def measure(self, z, servo_angle_in_rad):
-        for particle in self._particles:
-            # compute what the distance should be, if particle position is accurate
-            distance = self._map.closest_distance([particle.x, particle.y], particle.theta + servo_angle_in_rad)
-            print(particle.theta + servo_angle_in_rad)
-            print([particle.x, particle.y])
-            print(distance)
-            # compute the probability P[measured z | robot @ x]
-            p = scipy.stats.norm(distance, self._measurement_variance).pdf(z)
-            if p == 0:
-                p_measured_z_if_robot_at_x = float("-inf")
-            else:
-                p_measured_z_if_robot_at_x = math.log(p)
-            # compute the probability P[robot@x | measured]
-            #    NOTE: This is not a probability, since we don't know P[measured z]
-            #          Hence we normalize afterwards
-            particle.ln_p = p_measured_z_if_robot_at_x + particle.ln_p
-        # normalize probabilities (take P[measured z into account])
-        probabilities = np.array([particle.ln_p for particle in self._particles])
-        a = scipy.special.logsumexp(probabilities)
-        probabilities -= a
-        for j in range(0, len(probabilities)):
-            self._particles[j].ln_p = probabilities[j]
+        # Add x,y noise, even though we only turned.
+        self.particles[:, 0] += np.random.normal(0, self.cartesian_sigma, self.num_particles)
+        self.particles[:, 1] += np.random.normal(0, self.cartesian_sigma, self.num_particles)
 
     def forward(self, distance):
         '''Record that the robot moved (forward) by distance.'''
@@ -107,3 +89,11 @@ class ParticleFilter:
         self.particles[:, 1] += np.random.normal(0, self.cartesian_sigma, self.num_particles)
         self.particles[:, 2] += np.random.normal(0, self.theta_sigma, self.num_particles)
         self.particles[:, 2] = np.fmod(self.particles[:, 2], 2 * np.pi)
+
+    def move_by(self, delta_x, delta_y, deltaTheta):
+        self.particles[:, 0] += delta_x + np.random.normal(0, self.cartesian_sigma, self.num_particles)
+        self.particles[:, 1] += delta_y + np.random.normal(0, self.cartesian_sigma, self.num_particles)
+        self.particles[:, 2] += deltaTheta + np.random.normal(0, self.theta_sigma, self.num_particles)
+
+        self.particles[:, 2] = np.fmod(self.particles[:, 2], 2 * np.pi)
+
