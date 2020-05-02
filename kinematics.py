@@ -33,7 +33,6 @@ class Kinematics:
     def pick_up_cup(self, arm, curr_x, curr_y):
         '''
         Function to slowly approach the arm and grab it
-
         params:
             arm: arm object
             curr_x: current x position of the robot under odometry coordinates
@@ -56,7 +55,7 @@ class Kinematics:
         self.set_gripper(arm)
 
         # slowly move to the cup and grab it
-        self.step_inv_kinematics(arm, (self._x, -delta_dist+0.25), 0.001, "x", self._z)
+        self.step_inv_kinematics(arm, (self._x, -delta_dist+0.28), 0.001, "x", self._z)
         arm.close_gripper()
         self.time.sleep(10)
 
@@ -67,7 +66,6 @@ class Kinematics:
     def get_move_range(self, _range, _step_size):
         '''
         Helper function to get the range of motion
-
         param:
             _range: shape (start, end), start and end of the range
             _step_size: how much to move at each step
@@ -83,7 +81,6 @@ class Kinematics:
         '''
         Function to slowly move specified joints of the arm to move
         from current angle to specified angle
-
         param:
             arm: arm object to move
             joint_idxs: array of int that specifies which joints to move
@@ -99,7 +96,6 @@ class Kinematics:
     def step_inv_kinematics(self, arm, corr_range, step_size, axis, const_corr):
         '''
         Function to slowly move arm using inverse kinematics
-
         param:
             arm: arm object to move
             corr_range: shape (start, end) start and end of the corrdinate to move in degrees
@@ -116,18 +112,12 @@ class Kinematics:
             self.set_gripper(arm)
 
     def go_to_level0(self, arm):
-        '''
-        Go to level 0 of the shelf
-        '''
         self.step_go_to(arm, 0, (0, -126), 1)
         self.step_inv_kinematics(arm, (self._z, 0.1), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
 
     def go_to_level1(self, arm):
-        '''
-        Go to level 1 of the shelf
-        '''
         print("move to second floor")
         arm.go_to(0, math.radians(-90))
         arm.go_to(2, math.radians(-90))
@@ -151,9 +141,6 @@ class Kinematics:
 
 
     def go_to_level2(self, arm):
-        '''
-        Go to level 2 of the shelf
-        '''
         arm.go_to(0, np.pi/2)
         self.time.sleep(2)
         arm.go_to(5, -np.pi/2.8)
@@ -172,9 +159,6 @@ class Kinematics:
         arm.go_to(5, math.radians(0))
 
     def go_to_level3(self, arm):
-        '''
-        Go to level 3 of the shelf
-        '''
         arm.go_to(0, np.pi/18)
         self.time.sleep(2)
         arm.go_to(5, -np.pi/4)
@@ -190,7 +174,7 @@ class Kinematics:
 
     def inverse_kinematics(self, arm, x, z):
         '''
-        Given position of end effector, compute angle of theta1 and theta3
+        Given position of end effector, compute angle of theta1 and theta2
         '''
         r = np.sqrt(x**2 + (z-self.calibration)**2)
         print("r = %.3f" % r)
@@ -200,21 +184,21 @@ class Kinematics:
         print("cos(beta) = %.3f" % ((r**2 + self.l1**2 - self.l2**2)/(2 * self.l1 * r)))
         phi = np.arctan2(x, z-self.calibration)
         theta1s = -1 * np.array([phi + beta, phi - beta])
-        theta3s = np.array([np.pi - alpha, alpha - np.pi])
+        theta2s = np.array([np.pi - alpha, alpha - np.pi])
 
         # choose the answer with shorter distance
         ans_idx = 0
-        if np.abs(theta1s[0] - self.curr_theta1) + np.abs(theta3s[0] - self.curr_theta3) > np.abs(theta1s[1] - self.curr_theta1) + np.abs(theta3s[1] - self.curr_theta3):
+        if np.abs(theta1s[0] - self.curr_theta1) + np.abs(theta2s[0] - self.curr_theta3) > np.abs(theta1s[1] - self.curr_theta1) + np.abs(theta2s[1] - self.curr_theta3):
             ans_idx = 1
 
-        print("Go to [%.3f, %.3f], IK: [%.3f deg, %.3f deg]" % (x, z, np.degrees(theta1s[ans_idx]), np.degrees(theta3s[ans_idx])))
+        print("Go to [%.3f, %.3f], IK: [%.3f deg, %.3f deg]" % (x, z, np.degrees(theta1s[ans_idx]), np.degrees(theta2s[ans_idx])))
 
         arm.go_to(1, theta1s[ans_idx])
         self.time.sleep(0.01)
-        arm.go_to(3, theta3s[ans_idx])
+        arm.go_to(3, theta2s[ans_idx])
         self.time.sleep(0.01)
 
         self.curr_theta1 = theta1s[ans_idx]
-        self.curr_theta3 = theta3s[ans_idx]
+        self.curr_theta3 = theta2s[ans_idx]
         self._x = x
         self._z = z

@@ -1,3 +1,4 @@
+
 import pyCreate2
 import math
 import odometry
@@ -6,10 +7,11 @@ import lab8_map
 import lab10_map
 import particle_filter_01
 import rrt
-import kinematics
 import numpy as np
+import kinematics
 
-localize = False  # testing
+real = False  # real robot vs simulation
+localize = True  # testing
 
 
 class Run:
@@ -23,26 +25,24 @@ class Run:
         self.servo = factory.create_servo()
         self.sonar = factory.create_sonar()
 
-        self.arm = factory.create_kuka_lbr4p()
-        self.kinematics = kinematics.Kinematics(self.time)
+        if not real:
+            self.arm = factory.create_kuka_lbr4p()
 
         self.virtual_create = factory.create_virtual_create()
-        #self.virtual_create = factory.create_virtual_create("192.168.1.177")
 
         self.odometry = odometry.Odometry()
-        self.map_localize = lab8_map.Map("lab8_map.json")  # partical filter localize
+        self.map_local = lab8_map.Map("lab8_map.json")  # partical filter localize
         self.map_path = lab10_map.Map("configuration_space.png")
         self.rrt = rrt.RRT(self.map_path)
+        self.kinematics = kinematics.Kinematics(self.time)
 
         # TODO identify good PID controller gains
         # self.pidTheta = pid_controller.PIDController(200, 0, 100, [-10, 10], [-50, 50], is_angle=True)
         self.pidTheta = pid_controller.PIDController(300, 5, 50, [-10, 10], [-200, 200], is_angle=True)
         # TODO identify good particle filter parameters
-        self.pf = particle_filter_01.ParticleFilter(the_map=self.map_localize)
+        self.pf = particle_filter_01.ParticleFilter(the_map=self.map_local)
 
         self.joint_angles = np.zeros(7)
-
-        self.kinematics = kinematics.Kinematics(self.time)
 
     def sleep(self, time_in_sec):
         """Sleeps for the specified amount of time while keeping odometry up-to-date
@@ -69,7 +69,6 @@ class Run:
             output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
             self.create.drive_direct(int(+output_theta), int(-output_theta))
             self.sleep(0.01)
-            # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.create.drive_direct(0, 0)
         self.pf.turn(self.odometry.theta - old_theta)
 
@@ -88,7 +87,7 @@ class Run:
 
             # stop if close enough to goal
             distance = math.sqrt(math.pow(goal_x - self.odometry.x, 2) + math.pow(goal_y - self.odometry.y, 2))
-            if distance < 0.05:
+            if distance < 0.1:
                 self.create.drive_direct(0, 0)
                 break
             self.sleep(0.01)
@@ -96,6 +95,21 @@ class Run:
 
     def visualize(self):
         self.pf.draw(self.virtual_create)
+
+    def sense_helper_complex(self):
+        '''
+        Function to help localize in complex map
+        '''
+        servo_angles = [90, 45, 0, -45, -90]
+        for servo_angle in servo_angles:
+            self.servo.go_to(servo_angle)
+            self.time.sleep(1)
+            distance = self.sonar.get_distance()
+            # self.go_to_angle(self.odometry.theta + angle)
+            # print('theta:', self.odometry.theta, math.degrees(self.odometry.theta))
+            self.pf.sense(distance, np.radians(servo_angle))
+            self.visualize()
+            self.time.sleep(0.01)
 
     def run(self):
 
@@ -113,50 +127,32 @@ class Run:
         ])
         self.visualize()
 
-
-
-
         if localize:
             # Localize
             angle = math.pi / 15
-            counter = 0
-            while (np.array(self.pf.variance()) > np.array([0.01, 0.01])).any():
+            while (np.array(self.pf.variance()) > np.array([0.005, 0.005])).any():
                 distance = self.sonar.get_distance()
                 self.go_to_angle(self.odometry.theta + angle)
-
-                # self.odometry.theta += math.radians(2.54458909216)  # 48.88398233641108 actual ~ 51.4285714286 theory per turn
-
                 print('theta:', self.odometry.theta, math.degrees(self.odometry.theta))
                 self.pf.sense(distance)
                 self.visualize()
-                counter += 1
                 self.time.sleep(0.01)
-
-            # self.odometry.theta += math.radians(counter * 2.54458909216)  # 48.88398233641108 actual ~ 51.4285714286 theory
-
-            # # trying to improve localization by turning one extra time
-            # distance = self.sonar.get_distance()
-            # self.go_to_angle(self.odometry.theta + angle)
-            # print('theta:', self.odometry.theta, math.degrees(self.odometry.theta))
-            # self.pf.sense(distance)
-            # self.visualize()
-
             location = self.pf.mean()
         else:
-            angle = 0
             location = [1, 0.5]
 
         self.odometry.x = location[0]
         self.odometry.y = location[1]
         # self.odometry.theta =
         # print('one more rotation')
-        self.go_to_angle(self.odometry.theta + angle)
-        # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
-        # --------------------------------------Path Finder----------------------------------------
+        # self.go_to_angle(self.odometry.theta + angle)
+        input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
+        # --------------------------------------ADDED>>----------------------------------------
 
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
-        self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
+        # self.rrt.build((location[0] * 100, 300 - location[1] * 100), 3000, 10)
+        self.rrt.build((location[0] * 100, 300 - location[1] * 100), 1000, 10)
         x_goal = (152, 65)
         x_goal_nn = self.rrt.nearest_neighbor(x_goal)
         path = self.rrt.shortest_path(x_goal_nn)
@@ -169,43 +165,88 @@ class Run:
             self.map_path.draw_line((path[idx].state[0], path[idx].state[1]),
                                (path[idx + 1].state[0], path[idx + 1].state[1]), (0, 255, 0))
 
-        self.map_path.save("configspace_rrt.png")
+        self.map_path.save("configspace_rrt_sim.png")
 
-        # input('input: path found and configspace_rrt.png saved')
-        # --------------------------------------Move----------------------------------------
+        input('input: path found and configspace_rrt_sim.png saved')
+        # --------------------------------------ADDED>>----------------------------------------
         base_speed = 100
 
+        step_check = 1
         for p in path:
             goal_x = p.state[0] / 100.0
             goal_y = 3 - p.state[1] / 100.0
             print("goal: {} {}".format(goal_x, goal_y))
+
+            old_x = self.odometry.x
+            old_y = self.odometry.y
+            old_theta = self.odometry.theta
+
             while True:
                 state = self.create.update()
                 if state is not None:
                     self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
                     goal_theta = math.atan2(goal_y - self.odometry.y, goal_x - self.odometry.x)
-                    theta = math.atan2(math.sin(self.odometry.theta), math.cos(self.odometry.theta))
                     output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
                     self.create.drive_direct(int(base_speed + output_theta), int(base_speed - output_theta))
-                    # move virtual robot
-                    self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
-                    # print(output_theta)
-                    # print("Robot's coordinates[{},{},{}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
-                    # print("Actual coordinates[{},{},{}]".format(self.odometry.y, -self.odometry.x, math.degrees(self.odometry.theta)-90))
 
                     distance = math.sqrt(math.pow(goal_x - self.odometry.x, 2) + math.pow(goal_y - self.odometry.y, 2))
-                    if distance < 0.05:
+                    if distance < 0.07:
                         break
+            self.sleep(0.01)
+            self.pf.move_by(self.odometry.x - old_x, self.odometry.y - old_y, self.odometry.theta - old_theta)
+            self.visualize()
+            step_check = step_check+1
+
+            #check every 10 steps
+            if step_check%10 is 0:
+                angle = math.pi / 3
+                while (np.array(self.pf.variance()) > np.array([0.01, 0.01])).any():
+                    distance = self.sonar.get_distance()
+                    self.go_to_angle(self.odometry.theta + angle)
+                    print('theta:', self.odometry.theta, math.degrees(self.odometry.theta))
+                    self.pf.sense(distance)
+                    self.visualize()
+                    self.time.sleep(0.01)
+                location = self.pf.mean()
+                self.odometry.x = location[0]
+                self.odometry.y = location[1]
+
+
+
+
         self.create.drive_direct(0, 0)
-        self.time.sleep(2)
-        # go to a specified angle at the end of the path
+        self.time.sleep(10)
+        # --------------------------------------<<ADDED----------------------------------------
+
+        input("Last Localization Check!")
+        if not real:
+            if localize:
+                # Localize
+                angle = math.pi / 15
+                counter = 0
+                while (np.array(self.pf.variance()) > np.array([0.005, 0.005])).any():
+                    distance = self.sonar.get_distance()
+                    self.go_to_angle(self.odometry.theta + angle)
+                    self.pf.sense(distance)
+                    self.visualize()
+                    counter += 1
+                    self.time.sleep(0.01)
+
+                # trying to improve localization by turning one extra time
+                distance = self.sonar.get_distance()
+                self.go_to_angle(self.odometry.theta + angle)
+                self.pf.sense(distance)
+                self.visualize()
+                location = self.pf.mean()
+
+            self.odometry.x = location[0]
+            self.odometry.y = location[1]
+            # self.odometry.theta =
+            # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
+
         self.go_to_angle(-np.pi/2)
-        self.time.sleep(2)
-        # --------------------------------------Robot Arm part----------------------------------------
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
-        self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
-        print("Robot at [%.3f, %.3f]" % (self.odometry.x, self.odometry.y))
+        # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
         self.kinematics.go_to_level0(self.arm)
-
         input("End")
