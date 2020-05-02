@@ -116,12 +116,18 @@ class Kinematics:
             self.set_gripper(arm)
 
     def go_to_level0(self, arm):
+        '''
+        Go to level 0 of the shelf
+        '''
         self.step_go_to(arm, 0, (0, -126), 1)
         self.step_inv_kinematics(arm, (self._z, 0.1), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
 
     def go_to_level1(self, arm):
+        '''
+        Go to level 1 of the shelf
+        '''
         print("move to second floor")
         arm.go_to(0, math.radians(-90))
         arm.go_to(2, math.radians(-90))
@@ -145,6 +151,9 @@ class Kinematics:
 
 
     def go_to_level2(self, arm):
+        '''
+        Go to level 2 of the shelf
+        '''
         arm.go_to(0, np.pi/2)
         self.time.sleep(2)
         arm.go_to(5, -np.pi/2.8)
@@ -163,6 +172,9 @@ class Kinematics:
         arm.go_to(5, math.radians(0))
 
     def go_to_level3(self, arm):
+        '''
+        Go to level 3 of the shelf
+        '''
         arm.go_to(0, np.pi/18)
         self.time.sleep(2)
         arm.go_to(5, -np.pi/4)
@@ -178,7 +190,7 @@ class Kinematics:
 
     def inverse_kinematics(self, arm, x, z):
         '''
-        Given position of end effector, compute angle of theta1 and theta2
+        Given position of end effector, compute angle of theta1 and theta3
         '''
         r = np.sqrt(x**2 + (z-self.calibration)**2)
         print("r = %.3f" % r)
@@ -188,21 +200,21 @@ class Kinematics:
         print("cos(beta) = %.3f" % ((r**2 + self.l1**2 - self.l2**2)/(2 * self.l1 * r)))
         phi = np.arctan2(x, z-self.calibration)
         theta1s = -1 * np.array([phi + beta, phi - beta])
-        theta2s = np.array([np.pi - alpha, alpha - np.pi])
+        theta3s = np.array([np.pi - alpha, alpha - np.pi])
 
         # choose the answer with shorter distance
         ans_idx = 0
-        if np.abs(theta1s[0] - self.curr_theta1) + np.abs(theta2s[0] - self.curr_theta3) > np.abs(theta1s[1] - self.curr_theta1) + np.abs(theta2s[1] - self.curr_theta3):
+        if np.abs(theta1s[0] - self.curr_theta1) + np.abs(theta3s[0] - self.curr_theta3) > np.abs(theta1s[1] - self.curr_theta1) + np.abs(theta3s[1] - self.curr_theta3):
             ans_idx = 1
 
-        print("Go to [%.3f, %.3f], IK: [%.3f deg, %.3f deg]" % (x, z, np.degrees(theta1s[ans_idx]), np.degrees(theta2s[ans_idx])))
+        print("Go to [%.3f, %.3f], IK: [%.3f deg, %.3f deg]" % (x, z, np.degrees(theta1s[ans_idx]), np.degrees(theta3s[ans_idx])))
 
         arm.go_to(1, theta1s[ans_idx])
         self.time.sleep(0.01)
-        arm.go_to(3, theta2s[ans_idx])
+        arm.go_to(3, theta3s[ans_idx])
         self.time.sleep(0.01)
 
         self.curr_theta1 = theta1s[ans_idx]
-        self.curr_theta3 = theta2s[ans_idx]
+        self.curr_theta3 = theta3s[ans_idx]
         self._x = x
         self._z = z
