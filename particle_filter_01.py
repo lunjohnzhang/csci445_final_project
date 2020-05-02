@@ -1,10 +1,11 @@
 import numpy as np
+np.random.seed(5)
 import scipy.stats
 
 
 class ParticleFilter:
-    def __init__(self, num_particles=3000, sensor_sigma=0.1, the_map=None,
-                 cartesian_sigma=0.05, theta_sigma=np.pi / 48.):
+    def __init__(self, num_particles=3000, sensor_sigma=0.2, the_map=None,
+                 cartesian_sigma=0.01, theta_sigma=0.05):
         self.num_particles = num_particles
         self.drawn_particles = 500
         self.sensor_sigma = sensor_sigma
@@ -50,13 +51,13 @@ class ParticleFilter:
         x, y, theta = self.particles.mean(0)
         return (x, y, theta)
 
-    def sense(self, measured_distance):
+    def sense(self, measured_distance, servo_angle_in_rad = 0):
         '''Update particles using a sonar measurement.
 
-        Assumes the sonar is facing straight forward.'''
+        taking angle of the sonar in to consideration.'''
         expected_distances = np.array([
             self.map.closest_distance((self.particles[i, 0], self.particles[i, 1]),
-                                      self.particles[i, 2]) or 3.
+                                      self.particles[i, 2] + servo_angle_in_rad) or 3.
             for i in range(self.num_particles)])
         # Baye's rule (in extremely simplified form).
         p_s_o = scipy.stats.norm(measured_distance, self.sensor_sigma).pdf(expected_distances)

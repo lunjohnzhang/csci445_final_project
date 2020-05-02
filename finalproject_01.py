@@ -8,6 +8,7 @@ import lab10_map
 import particle_filter_01
 import rrt
 import numpy as np
+import kinematics
 
 real = False  # real robot vs simulation
 localize = True  # testing
@@ -33,6 +34,7 @@ class Run:
         self.map_local = lab8_map.Map("lab8_map.json")  # partical filter localize
         self.map_path = lab10_map.Map("configuration_space.png")
         self.rrt = rrt.RRT(self.map_path)
+        self.kinematics = kinematics.Kinematics(self.time)
 
         # TODO identify good PID controller gains
         # self.pidTheta = pid_controller.PIDController(200, 0, 100, [-10, 10], [-50, 50], is_angle=True)
@@ -94,6 +96,21 @@ class Run:
     def visualize(self):
         self.pf.draw(self.virtual_create)
 
+    def sense_helper_complex(self):
+        '''
+        Function to help localize in complex map
+        '''
+        servo_angles = [90, 45, 0, -45, -90]
+        for servo_angle in servo_angles:
+            self.servo.go_to(servo_angle)
+            self.time.sleep(1)
+            distance = self.sonar.get_distance()
+            # self.go_to_angle(self.odometry.theta + angle)
+            # print('theta:', self.odometry.theta, math.degrees(self.odometry.theta))
+            self.pf.sense(distance, np.radians(servo_angle))
+            self.visualize()
+            self.time.sleep(0.01)
+
     def run(self):
 
         self.create.start()
@@ -112,8 +129,8 @@ class Run:
 
         if localize:
             # Localize
-            angle = math.pi / 3
-            while (np.array(self.pf.variance()) > np.array([0.01, 0.01])).any():
+            angle = math.pi / 15
+            while (np.array(self.pf.variance()) > np.array([0.005, 0.005])).any():
                 distance = self.sonar.get_distance()
                 self.go_to_angle(self.odometry.theta + angle)
                 print('theta:', self.odometry.theta, math.degrees(self.odometry.theta))
@@ -136,8 +153,10 @@ class Run:
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         # self.rrt.build((location[0] * 100, 300 - location[1] * 100), 3000, 10)
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 1000, 10)
-        x_goal = self.rrt.nearest_neighbor((150, 40))
-        path = self.rrt.shortest_path(x_goal)
+        x_goal = (152, 65)
+        x_goal_nn = self.rrt.nearest_neighbor(x_goal)
+        path = self.rrt.shortest_path(x_goal_nn)
+        path.append(rrt.Vertex(x_goal))
 
         for v in self.rrt.T:
             for u in v.neighbors:
@@ -225,3 +244,9 @@ class Run:
             # self.odometry.theta =
             input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
 
+        self.go_to_angle(-np.pi/2)
+        self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
+        self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
+        self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
+        self.go_to_level0(self.arm)
+        input("End")
