@@ -3,20 +3,42 @@ import math
 
 class Kinematics:
     def __init__(self, time):
+        # params for inverse kinematics
         self.l1 = 0.4 # meters, distance from LBR4p_joint2 to LBR4p_joint4
         self.l2 = 0.4575 # meters, distance from LBR4p_joint4 to LBR4p_joint7 (end effector)
         self.calibration = 0.3105 # meters, distance from LBR4p_joint2 to ground
+
+        # angle of some relevant joints
         self.curr_theta1 = 0
-        self.curr_theta2 = 0
+        self.curr_theta3 = 0
+        self.curr_theta5 = 0
         self.time = time
-        self.arm_x = 1.6001 # m
-        self.arm_y = 3.3999 # m
+
+        # position of the joints controlled by inverse kinematics
+        self._x = 0
+        self._z = 0
+
+        # corrdinate of the arm in meters
+        self.arm_x = 1.6001
+        self.arm_y = 3.3999
 
     def set_gripper(self, arm):
-        delta_cali = np.pi/2 - (self.curr_theta1 + self.curr_theta2)
-        arm.go_to(5, delta_cali) # make the crawler horizontal with the ground
+        '''
+        Function to set the angle of gripper so that it is always parallel with the ground
+        '''
+        delta_cali = np.pi/2 - (self.curr_theta1 + self.curr_theta3)
+        arm.go_to(5, delta_cali)
+        self.curr_theta5 = delta_cali
 
     def pick_up_cup(self, arm, curr_x, curr_y):
+        '''
+        Function to slowly approach the arm and grab it
+
+        params:
+            arm: arm object
+            curr_x: current x position of the robot under odometry coordinates
+            curr_y: current y position of the robot under odometry coordinates
+        '''
         arm.open_gripper()
         self.time.sleep(5)
 
@@ -28,96 +50,76 @@ class Kinematics:
         # calculate delta dist with the robot arm
         delta_dist = np.linalg.norm(np.array([curr_x, curr_y]) - np.array([self.arm_x, self.arm_y]))
         print("delta_dist = %.3f" % delta_dist)
-        # self.inverse_kinematics(arm, x = -delta_dist+0.29, z = 0.15) # plus a constant for calibration
-        self.inverse_kinematics(arm, x = -delta_dist+0.5, z = 0.15)
+
+        # move a position behind the robot
+        self.inverse_kinematics(arm, x = -delta_dist+0.5, z = 0.15) # plus a constant for calibration
         self.set_gripper(arm)
-        xs = [i for i in np.arange(-delta_dist+0.5, -delta_dist+0.25, -0.01)]
-        for x in xs:
-            self.inverse_kinematics(arm, x, z = 0.15) # plus a constant for calibration
-            self.set_gripper(arm)
+
+        # slowly move to the cup and grab it
+        self.step_inv_kinematics(arm, (self._x, -delta_dist+0.25), 0.001, "x", self._z)
         arm.close_gripper()
         self.time.sleep(10)
-        # arm.go_to(0, math.radians(0))
-        arm.go_to(1, math.radians(90))
-        arm.go_to(3, math.radians(0))
-        arm.go_to(5, math.radians(0))
 
+        # slowly move the arm up
+        self.step_inv_kinematics(arm, (self._z, 0.3), 0.001, "z", self._x)
+        self.time.sleep(20)
 
-    def grab(self, arm):
-        print("grab the bottle")
-        arm.go_to(1, math.radians(90))
-        arm.go_to(3, math.radians(15))
-        arm.go_to(5, math.radians(-15))
-        arm.close_gripper()
-        self.time.sleep(5)
-        arm.go_to(1, math.radians(0))
-        arm.go_to(3, math.radians(0))
-        arm.go_to(5, math.radians(0))
-        self.time.sleep(2)
+    def get_move_range(self, _range, _step_size):
+        '''
+        Helper function to get the range of motion
+
+        param:
+            _range: shape (start, end), start and end of the range
+            _step_size: how much to move at each step
+        '''
+        move_range = []
+        if _range[0] <= _range[1]:
+            move_range = [i for i in np.arange(_range[0], _range[1], _step_size)]
+        else:
+            move_range = [i for i in np.arange(_range[0], _range[1], -_step_size)]
+        return move_range
+
+    def step_go_to(self, arm, joint_idx, angle_range, step_size):
+        '''
+        Function to slowly move specified joints of the arm to move
+        from current angle to specified angle
+
+        param:
+            arm: arm object to move
+            joint_idxs: array of int that specifies which joints to move
+            angle_range: shape (start, end) start and end of the angle in degrees
+            step_size: how much angle in degrees to move at each step, assume to be positive
+        '''
+        move_range = self.get_move_range(angle_range, step_size)
+        for i in move_range:
+            # for joint_idx in joint_idxs:
+            arm.go_to(joint_idx, np.radians(i))
+            self.time.sleep(0.1)
+
+    def step_inv_kinematics(self, arm, corr_range, step_size, axis, const_corr):
+        '''
+        Function to slowly move arm using inverse kinematics
+
+        param:
+            arm: arm object to move
+            corr_range: shape (start, end) start and end of the corrdinate to move in degrees
+            step_size: how much angle in degrees to move at each step, assume to be positive
+            axis: axis of the corrdinate to move, x or z
+            const_corr: coordinate of the axis that does not move
+        '''
+        move_range = self.get_move_range(corr_range, step_size)
+        for delta in move_range:
+            if axis == "x":
+                self.inverse_kinematics(arm, delta, const_corr)
+            elif axis == "z":
+                self.inverse_kinematics(arm, const_corr, delta)
+            self.set_gripper(arm)
 
     def go_to_level0(self, arm):
-        # arm.go_to(0, math.radians(-45))
-        # self.time.sleep(1)
-        # arm.go_to(1, math.radians(70))
-        # self.time.sleep(1)
-        # arm.go_to(3, math.radians(15))
-        # self.time.sleep(1)
-        # arm.go_to(5, math.radians(-15))
-        # self.time.sleep(5)
-
-        # arm.go_to(1, math.radians(-45))
-        # self.time.sleep(5)
-        # arm.go_to(3, math.radians(15))
-        arm.go_to(5, math.radians(0))
-        for i in range(0,20):
-            i = i + 5
-            arm.go_to(1, math.radians(80 - i))
-            arm.go_to(3, math.radians(45 - i))
-            self.time.sleep(0.05)
-        # arm.go_to(1, math.radians(60))
-        for i in range(0,80):
-            i = i + 10
-            arm.go_to(0, math.radians(-i))
-            self.time.sleep(0.05)
-        for i in range(50,80):
-            i = i + 5
-            arm.go_to(1, math.radians(i))
-            self.time.sleep(0.05)
-        self.time.sleep(2)
-        for i in range(0,85):
-            i = i + 5
-            arm.go_to(2, math.radians(-i))
-            arm.go_to(4, math.radians(i))
-            self.time.sleep(0.01)
-        # arm.go_to(5, math.radians(20))
-        for i in range(25,50):
-            i = i + 5
-            arm.go_to(3, math.radians(i))
-            self.time.sleep(0.01)
-        
-        self.time.sleep(5)
-
-        # self.inverse_kinematics(arm, x=-0.68, z = -0.05)
-        # self.time.sleep(5)
-        # self.inverse_kinematics(arm, x=-0.68, z = -0.06)
-        # self.time.sleep(5)
-        self.inverse_kinematics(arm, x=-0.68, z = -0.07)
-        # self.time.sleep(5)
-
-
-
-       
-
+        self.step_go_to(arm, 0, (0, -126), 1)
+        self.step_inv_kinematics(arm, (self._z, 0.1), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
-
-        arm.go_to(0, math.radians(0))
-        arm.go_to(1, math.radians(0))
-        arm.go_to(2, math.radians(0))
-        arm.go_to(3, math.radians(0))
-        arm.go_to(4, math.radians(0))
-        arm.go_to(5, math.radians(0))
-        self.time.sleep(2)
 
     def go_to_level1(self, arm):
         print("move to second floor")
@@ -190,15 +192,17 @@ class Kinematics:
 
         # choose the answer with shorter distance
         ans_idx = 0
-        if np.abs(theta1s[0] - self.curr_theta1) + np.abs(theta2s[0] - self.curr_theta2) > np.abs(theta1s[1] - self.curr_theta1) + np.abs(theta2s[1] - self.curr_theta2):
+        if np.abs(theta1s[0] - self.curr_theta1) + np.abs(theta2s[0] - self.curr_theta3) > np.abs(theta1s[1] - self.curr_theta1) + np.abs(theta2s[1] - self.curr_theta3):
             ans_idx = 1
 
         print("Go to [%.3f, %.3f], IK: [%.3f deg, %.3f deg]" % (x, z, np.degrees(theta1s[ans_idx]), np.degrees(theta2s[ans_idx])))
 
         arm.go_to(1, theta1s[ans_idx])
-        self.time.sleep(0.5)
+        self.time.sleep(0.01)
         arm.go_to(3, theta2s[ans_idx])
-        self.time.sleep(0.5)
+        self.time.sleep(0.01)
 
         self.curr_theta1 = theta1s[ans_idx]
-        self.curr_theta2 = theta2s[ans_idx]
+        self.curr_theta3 = theta2s[ans_idx]
+        self._x = x
+        self._z = z

@@ -201,15 +201,11 @@ class Run:
         # go to a specified angle at the end of the path
         self.go_to_angle(-np.pi/2)
         self.time.sleep(2)
-        # --------------------------------------Wait ARM part----------------------------------------
+        # --------------------------------------Robot Arm part----------------------------------------
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         print("Robot at [%.3f, %.3f]" % (self.odometry.x, self.odometry.y))
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
-        # input("wait for arm")
-        # self.kinematics.go_to_level0(self.arm)
-        # self.kinematics.go_to_level1(self.arm)
-        deltas = [i for i in np.arange(0, -0.7*np.pi, -0.05)]
-        for delta in deltas:
-            self.arm.go_to(0, delta)
-            self.time.sleep(2)
+        self.kinematics.go_to_level0(self.arm)
+
+        input("End")
