@@ -112,8 +112,12 @@ class Run:
         self.visualize()
 
         # self.kinematics.go_to_level3(self.arm)
-        self.kinematics.pick_up_cup(self.arm, 1.5, 2.5)
-        self.time.sleep(30)
+        self.kinematics.pick_up_cup(self.arm, 1.5, 2.35)
+        # self.time.sleep(30)
+        deltas = [i for i in np.arange(0, -0.7*np.pi, -0.05)]
+        for delta in deltas:
+            self.arm.go_to(0, delta)
+            self.time.sleep(2)
 
         # while True:
         #     b = self.virtual_create.get_last_button()

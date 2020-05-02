@@ -157,7 +157,7 @@ class Run:
         # find a path
         print("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 300, 10)
-        x_goal = (152, 66)
+        x_goal = (152, 65)
         x_goal_nn = self.rrt.nearest_neighbor(x_goal)
         path = self.rrt.shortest_path(x_goal_nn)
         path.append(rrt.Vertex(x_goal))
@@ -207,5 +207,9 @@ class Run:
         print("Robot at [%.3f, %.3f]" % (self.odometry.x, self.odometry.y))
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
         # input("wait for arm")
-        self.kinematics.go_to_level0(self.arm)
+        # self.kinematics.go_to_level0(self.arm)
         # self.kinematics.go_to_level1(self.arm)
+        deltas = [i for i in np.arange(0, -0.7*np.pi, -0.05)]
+        for delta in deltas:
+            self.arm.go_to(0, delta)
+            self.time.sleep(2)

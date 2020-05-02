@@ -31,14 +31,14 @@ class Kinematics:
         # self.inverse_kinematics(arm, x = -delta_dist+0.29, z = 0.15) # plus a constant for calibration
         self.inverse_kinematics(arm, x = -delta_dist+0.5, z = 0.15)
         self.set_gripper(arm)
-        xs = [i for i in np.arange(-delta_dist+0.5, -delta_dist+0.22, -0.01)]
+        xs = [i for i in np.arange(-delta_dist+0.5, -delta_dist+0.25, -0.01)]
         for x in xs:
             self.inverse_kinematics(arm, x, z = 0.15) # plus a constant for calibration
             self.set_gripper(arm)
         arm.close_gripper()
-        self.time.sleep(5)
-        arm.go_to(0, math.radians(0))
-        arm.go_to(1, math.radians(0))
+        self.time.sleep(10)
+        # arm.go_to(0, math.radians(0))
+        arm.go_to(1, math.radians(90))
         arm.go_to(3, math.radians(0))
         arm.go_to(5, math.radians(0))
 
