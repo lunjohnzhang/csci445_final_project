@@ -146,7 +146,7 @@ class Run:
         # self.odometry.theta =
         # print('one more rotation')
         # self.go_to_angle(self.odometry.theta + angle)
-        input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
+        # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
         # --------------------------------------ADDED>>----------------------------------------
 
         # find a path
@@ -167,7 +167,7 @@ class Run:
 
         self.map_path.save("configspace_rrt_sim.png")
 
-        input('input: path found and configspace_rrt_sim.png saved')
+        # input('input: path found and configspace_rrt_sim.png saved')
         # --------------------------------------ADDED>>----------------------------------------
         base_speed = 100
 
@@ -218,7 +218,7 @@ class Run:
         self.time.sleep(10)
         # --------------------------------------<<ADDED----------------------------------------
 
-        input("Last Localization Check!")
+        # input("Last Localization Check!")
         if not real:
             if localize:
                 # Localize
@@ -243,7 +243,7 @@ class Run:
             self.odometry.y = location[1]
             # self.odometry.theta =
             # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
-
+        print("start grabing")
         self.go_to_angle(-np.pi/2)
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)

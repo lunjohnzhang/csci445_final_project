@@ -3,11 +3,13 @@ import math
 import odometry
 import pid_controller
 import lab8_map
-import particle_filter
 import kinematics
-
+import particle_filter_01
 import numpy as np
 
+
+real = False  # real robot vs simulation
+localize = True  # testing
 
 class Run:
     def __init__(self, factory):
@@ -19,17 +21,23 @@ class Run:
         self.time = factory.create_time_helper()
         self.servo = factory.create_servo()
         self.sonar = factory.create_sonar()
-        self.arm = factory.create_kuka_lbr4p()
-        self.kinematics = kinematics.Kinematics(self.time)
+
+        if not real:
+            self.arm = factory.create_kuka_lbr4p()
+
         self.virtual_create = factory.create_virtual_create()
-        # self.virtual_create = factory.create_virtual_create("192.168.1.XXX")
+
         self.odometry = odometry.Odometry()
-        self.map = lab8_map.Map("lab8_map.json")
+        self.map_local = lab8_map.Map("lab8_map.json")  # partical filter localize
+        self.map_path = lab10_map.Map("configuration_space.png")
+        self.rrt = rrt.RRT(self.map_path)
+        self.kinematics = kinematics.Kinematics(self.time)
 
         # TODO identify good PID controller gains
-        self.pidTheta = pid_controller.PIDController(200, 0, 100, [-10, 10], [-50, 50], is_angle=True)
+        # self.pidTheta = pid_controller.PIDController(200, 0, 100, [-10, 10], [-50, 50], is_angle=True)
+        self.pidTheta = pid_controller.PIDController(300, 5, 50, [-10, 10], [-200, 200], is_angle=True)
         # TODO identify good particle filter parameters
-        self.pf = particle_filter.ParticleFilter(self.map, 1000, 0.06, 0.15, 0.2)
+        self.pf = particle_filter_01.ParticleFilter(the_map=self.map_local)
 
         self.joint_angles = np.zeros(7)
 
@@ -53,13 +61,13 @@ class Run:
         old_y = self.odometry.y
         old_theta = self.odometry.theta
         while math.fabs(math.atan2(
-            math.sin(goal_theta - self.odometry.theta),
-            math.cos(goal_theta - self.odometry.theta))) > 0.05:
+                math.sin(goal_theta - self.odometry.theta),
+                math.cos(goal_theta - self.odometry.theta))) > 0.05:
             output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
             self.create.drive_direct(int(+output_theta), int(-output_theta))
             self.sleep(0.01)
         self.create.drive_direct(0, 0)
-        self.pf.move_by(self.odometry.x - old_x, self.odometry.y - old_y, self.odometry.theta - old_theta)
+        self.pf.turn(self.odometry.theta - old_theta)
 
     def forward(self):
         old_x = self.odometry.x
@@ -72,35 +80,22 @@ class Run:
         while True:
             goal_theta = math.atan2(goal_y - self.odometry.y, goal_x - self.odometry.x)
             output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
-            self.create.drive_direct(int(base_speed+output_theta), int(base_speed-output_theta))
+            self.create.drive_direct(int(base_speed + output_theta), int(base_speed - output_theta))
 
             # stop if close enough to goal
             distance = math.sqrt(math.pow(goal_x - self.odometry.x, 2) + math.pow(goal_y - self.odometry.y, 2))
-            if distance < 0.05:
+            if distance < 0.1:
                 self.create.drive_direct(0, 0)
                 break
             self.sleep(0.01)
-        self.pf.move_by(self.odometry.x - old_x, self.odometry.y - old_y, self.odometry.theta - old_theta)
+        self.pf.forward(math.sqrt((self.odometry.x - old_x) ** 2 + (self.odometry.y - old_y) ** 2))
 
     def visualize(self):
-        x, y, theta = self.pf.get_estimate()
-        self.virtual_create.set_pose((x, y, 0.1), theta)
-        data = []
-        for particle in self.pf._particles:
-            data.extend([particle.x, particle.y, 0.1, particle.theta])
-        self.virtual_create.set_point_cloud(data)
+        self.pf.draw(self.virtual_create)
 
     def run(self):
         self.create.start()
         self.create.safe()
-
-        self.create.drive_direct(0, 0)
-
-        self.arm.open_gripper()
-
-        self.time.sleep(4)
-
-        self.arm.close_gripper()
 
         # request sensors
         self.create.start_stream([
@@ -111,13 +106,10 @@ class Run:
         self.virtual_create.enable_buttons()
         self.visualize()
 
-        # self.kinematics.go_to_level3(self.arm)
-        self.kinematics.pick_up_cup(self.arm, 1.5, 2.35)
-        # self.time.sleep(30)
-        deltas = [i for i in np.arange(0, -0.7*np.pi, -0.05)]
-        for delta in deltas:
-            self.arm.go_to(0, delta)
-            self.time.sleep(2)
+        print("start grabing")
+        self.kinematics.pick_up_cup(self.arm, 1.52, 2.35)
+        self.kinematics.go_to_level0(self.arm)
+        input("End")
 
         # while True:
         #     b = self.virtual_create.get_last_button()
