@@ -121,7 +121,8 @@ class Run:
 
         self.odometry.x = location[0]
         self.odometry.y = location[1]
-        # self.odometry.theta =
+        self.odometry.theta = self.odometry.theta + math.pi / 2
+
         # print('one more rotation')
         # self.go_to_angle(self.odometry.theta + angle)
         input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
@@ -145,15 +146,20 @@ class Run:
 
         self.map_path.save("configspace_rrt_sim.png")
 
-        input('input: path found and configspace_rrt_sim.png saved')
         # --------------------------------------ADDED>>----------------------------------------
         base_speed = 100
 
         step_check = 1
         for p in path:
+
+            #self.real_odometry_x = 0.0
+            #self.real_odometry_y = 0.0
+
             goal_x = p.state[0] / 100.0
             goal_y = 3 - p.state[1] / 100.0
-            print("goal: {} {}".format(goal_x, goal_y))
+
+            #self.real_goal_x = goal_x + (goal_y - standard_y)
+            #self.real_goal_y = goal_y - (goal_x - standard_x)
 
             old_x = self.odometry.x
             old_y = self.odometry.y
@@ -161,7 +167,9 @@ class Run:
 
             while True:
                 state = self.create.update()
+
                 if state is not None:
+
                     self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
                     goal_theta = math.atan2(goal_y - self.odometry.y, goal_x - self.odometry.x)
                     output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
