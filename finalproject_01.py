@@ -38,7 +38,7 @@ class Run:
 
         # TODO identify good PID controller gains
         # self.pidTheta = pid_controller.PIDController(200, 0, 100, [-10, 10], [-50, 50], is_angle=True)
-        self.pidTheta = pid_controller.PIDController(300, 5, 50, [-10, 10], [-200, 200], is_angle=True)
+        self.pidTheta = pid_controller.PIDController(300, 15, 30, [-10, 10], [-200, 200], is_angle=True)
         # TODO identify good particle filter parameters
         self.pf = particle_filter_01.ParticleFilter(the_map=self.map_local)
 
@@ -245,8 +245,10 @@ class Run:
             # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
         print("start grabing")
         self.go_to_angle(-np.pi/2)
+        print("finished parking")
+        print("theta = %.3f" % np.degrees(self.odometry.theta))
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
-        self.kinematics.go_to_level0(self.arm)
+        self.kinematics.go_to_level3(self.arm)
         input("End")

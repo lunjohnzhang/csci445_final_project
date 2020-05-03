@@ -30,6 +30,61 @@ class Kinematics:
         arm.go_to(5, delta_cali)
         self.curr_theta5 = delta_cali
 
+    def get_move_range(self, _range, _step_size):
+        '''
+        Helper function to get the range of motion
+        param:
+            _range: shape (start, end), start and end of the range
+            _step_size: how much to move at each step
+        '''
+        move_range = []
+        if _range[0] <= _range[1]:
+            move_range = [i for i in np.arange(_range[0], _range[1], _step_size)]
+        else:
+            move_range = [i for i in np.arange(_range[0], _range[1], -_step_size)]
+        return move_range
+
+    def step_go_to(self, arm, joint_idx, angle_range, step_size):
+        '''
+        Function to slowly move specified joints of the arm to move
+        from current angle to specified angle
+        param:
+            arm: arm object to move
+            joint_idxs: array of int that specifies which joints to move
+            angle_range: shape (start, end) start and end of the angle in degrees
+            step_size: how much angle in degrees to move at each step, assume to be positive
+        '''
+        move_range = self.get_move_range(angle_range, step_size)
+        print(move_range)
+        for i in move_range:
+            # for joint_idx in joint_idxs:
+            arm.go_to(joint_idx, np.radians(i))
+            self.time.sleep(0.1)
+        if joint_idx == 1:
+            self.curr_theta1 = move_range[-1]
+        elif joint_idx == 3:
+            self.curr_theta3 = move_range[-1]
+        elif joint_idx == 5:
+            self.curr_theta5 = move_range[-1]
+
+    def step_inv_kinematics(self, arm, corr_range, step_size, axis, const_corr):
+        '''
+        Function to slowly move arm using inverse kinematics
+        param:
+            arm: arm object to move
+            corr_range: shape (start, end) start and end of the corrdinate to move in degrees
+            step_size: how much angle in degrees to move at each step, assume to be positive
+            axis: axis of the corrdinate to move, x or z
+            const_corr: coordinate of the axis that does not move
+        '''
+        move_range = self.get_move_range(corr_range, step_size)
+        for delta in move_range:
+            if axis == "x":
+                self.inverse_kinematics(arm, delta, const_corr)
+            elif axis == "z":
+                self.inverse_kinematics(arm, const_corr, delta)
+            self.set_gripper(arm)
+
     def pick_up_cup(self, arm, curr_x, curr_y):
         '''
         Function to slowly approach the arm and grab it
@@ -59,118 +114,86 @@ class Kinematics:
         arm.close_gripper()
         self.time.sleep(10)
 
-        # slowly move the arm up
-        self.step_inv_kinematics(arm, (self._z, 0.3), 0.001, "z", self._x)
-        self.time.sleep(20)
-
-    def get_move_range(self, _range, _step_size):
-        '''
-        Helper function to get the range of motion
-        param:
-            _range: shape (start, end), start and end of the range
-            _step_size: how much to move at each step
-        '''
-        move_range = []
-        if _range[0] <= _range[1]:
-            move_range = [i for i in np.arange(_range[0], _range[1], _step_size)]
-        else:
-            move_range = [i for i in np.arange(_range[0], _range[1], -_step_size)]
-        return move_range
-
-    def step_go_to(self, arm, joint_idx, angle_range, step_size):
-        '''
-        Function to slowly move specified joints of the arm to move
-        from current angle to specified angle
-        param:
-            arm: arm object to move
-            joint_idxs: array of int that specifies which joints to move
-            angle_range: shape (start, end) start and end of the angle in degrees
-            step_size: how much angle in degrees to move at each step, assume to be positive
-        '''
-        move_range = self.get_move_range(angle_range, step_size)
-        for i in move_range:
-            # for joint_idx in joint_idxs:
-            arm.go_to(joint_idx, np.radians(i))
-            self.time.sleep(0.1)
-
-    def step_inv_kinematics(self, arm, corr_range, step_size, axis, const_corr):
-        '''
-        Function to slowly move arm using inverse kinematics
-        param:
-            arm: arm object to move
-            corr_range: shape (start, end) start and end of the corrdinate to move in degrees
-            step_size: how much angle in degrees to move at each step, assume to be positive
-            axis: axis of the corrdinate to move, x or z
-            const_corr: coordinate of the axis that does not move
-        '''
-        move_range = self.get_move_range(corr_range, step_size)
-        for delta in move_range:
-            if axis == "x":
-                self.inverse_kinematics(arm, delta, const_corr)
-            elif axis == "z":
-                self.inverse_kinematics(arm, const_corr, delta)
-            self.set_gripper(arm)
+        # sloly move the arm back a little bit
+        self.step_inv_kinematics(arm, (self._x, -delta_dist+0.5), 0.001, "x", self._z)
 
     def go_to_level0(self, arm):
+        # slowly move the arm up
+        self.step_inv_kinematics(arm, (self._z, 0.3), 0.001, "z", self._x)
+        self.time.sleep(10)
+
+        # rotate joint0 to specified angle
         self.step_go_to(arm, 0, (0, -126), 1)
-        self.step_inv_kinematics(arm, (self._z, 0.1), 0.001, "z", self._x)
+
+        # put down the cup
+        self.step_inv_kinematics(arm, (self._z, 0.15), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
 
     def go_to_level1(self, arm):
-        print("move to second floor")
-        arm.go_to(0, math.radians(-90))
-        arm.go_to(2, math.radians(-90))
-        self.time.sleep(1)
-        self.inverse_kinematics(arm, x=-0.7, z = 0.17)
-        arm.go_to(4, math.radians(65))
-        self.time.sleep(5)
+        # slowly move the arm up
+        self.step_inv_kinematics(arm, (self._z, 0.65), 0.001, "z", self._x)
+        self.time.sleep(10)
 
+        # rotate joint0 to specified angle
+        self.step_go_to(arm, 0, (0, -136), 1)
+
+        # put down the cup
+        self.step_inv_kinematics(arm, (self._z, 0.55), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
-        arm.go_to(2, math.radians(-45))
-        self.time.sleep(1)
-
-        arm.go_to(0, math.radians(0))
-        arm.go_to(1, math.radians(0))
-        arm.go_to(2, math.radians(0))
-        arm.go_to(3, math.radians(0))
-        arm.go_to(4, math.radians(0))
-        arm.go_to(5, math.radians(0))
-        self.time.sleep(2)
-
 
     def go_to_level2(self, arm):
-        arm.go_to(0, np.pi/2)
-        self.time.sleep(2)
-        arm.go_to(5, -np.pi/2.8)
-        self.time.sleep(2)
-        self.inverse_kinematics(arm, x = 0.45, z = 1)
-        arm.go_to(0, np.pi/4)
-        self.time.sleep(2)
-        arm.go_to(0, -np.pi/18)
+        # slowly move the arm up
+        self.step_inv_kinematics(arm, (self._z, 0.65), 0.001, "z", self._x)
+        self.time.sleep(10)
+
+        # move the arm back a little more
+        self.step_inv_kinematics(arm, (self._x, -0.3), 0.001, "x", self._z)
+
+        # move the arm up more
+        self.step_inv_kinematics(arm, (self._z, 1), 0.001, "z", self._x)
+
+        # rotate joint0 to specified angle
+        self.step_go_to(arm, 0, (0, -150), 1)
+
+        # put down the cup
+        self.step_inv_kinematics(arm, (self._z, 0.90), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
-
-        arm.go_to(0, np.pi/2)
-        arm.go_to(0, math.radians(0))
-        arm.go_to(1, math.radians(0))
-        arm.go_to(3, math.radians(0))
-        arm.go_to(5, math.radians(0))
 
     def go_to_level3(self, arm):
-        arm.go_to(0, np.pi/18)
-        self.time.sleep(2)
-        arm.go_to(5, -np.pi/4)
-        self.time.sleep(2)
-        self.inverse_kinematics(arm, x = 0.3, z = 1.1)
+        # slowly move the arm up
+        self.step_inv_kinematics(arm, (self._z, 0.65), 0.001, "z", self._x)
+        self.time.sleep(10)
+
+        # move the arm back more
+        self.step_inv_kinematics(arm, (self._x, 0), 0.001, "x", self._z)
+
+        # move the arm up more
+        self.step_inv_kinematics(arm, (self._z, 1.15), 0.001, "z", self._x)
+
+        # rotate joint0 to specified angle
+        self.step_go_to(arm, 0, (0, -170), 1)
+
+        print("curr theta5 = %.3f" % np.degrees(self.curr_theta5))
+
+        # input("here")
+
+        # uprise the gripper
+        self.step_go_to(arm, 5, (np.degrees(self.curr_theta5), 60), 1)
+
+        # input("Here")
+
+        self.step_go_to(arm, 1, (self.curr_theta1, 45), 1)
+
+        # # move the arm forward a little
+        # self.step_inv_kinematics(arm, (self._x, -0.2), 0.001, "x", self._z)
+
+        # # put down the cup
+        # self.step_inv_kinematics(arm, (self._z, 1.1), 0.001, "z", self._x)
         arm.open_gripper()
         self.time.sleep(5)
-
-        arm.go_to(0, math.radians(0))
-        arm.go_to(1, math.radians(0))
-        arm.go_to(3, math.radians(0))
-        arm.go_to(5, math.radians(0))
 
     def inverse_kinematics(self, arm, x, z):
         '''
