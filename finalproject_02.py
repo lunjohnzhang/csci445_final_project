@@ -125,14 +125,14 @@ class Run:
 
         # print('one more rotation')
         # self.go_to_angle(self.odometry.theta + angle)
-        input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
+        # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
         # --------------------------------------ADDED>>----------------------------------------
 
         # find a path
-        input("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
+        # input("self.rrt.build({}, {})".format(location[0] * 100, 300 - location[1] * 100))
         # self.rrt.build((location[0] * 100, 300 - location[1] * 100), 3000, 10)
         self.rrt.build((location[0] * 100, 300 - location[1] * 100), 1000, 10)
-        x_goal = (65, 152)
+        x_goal = (60, 152)
         x_goal_nn = self.rrt.nearest_neighbor(x_goal)
         path = self.rrt.shortest_path(x_goal_nn)
         path.append(rrt.Vertex(x_goal))
@@ -229,9 +229,10 @@ class Run:
             # self.odometry.theta =
             # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
         print("start grabing")
-        self.go_to_angle(-np.pi/2)
+        self.go_to_angle(0) # 0 odometry deg of robot changed
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
+        print("Robot at [%.3f, %.3f, %.3f]" % (self.odometry.x, self.odometry.y, np.degrees(self.odometry.theta)))
         # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
-        self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y)
+        self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y, map_idx = 2)
         self.kinematics.go_to_level0(self.arm)
         input("End")

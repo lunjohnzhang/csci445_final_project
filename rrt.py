@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 import math
+np.random.seed(5)
 
 
 def distance(a, b):

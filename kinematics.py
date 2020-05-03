@@ -19,8 +19,6 @@ class Kinematics:
         self._z = 0
 
         # corrdinate of the arm in meters
-        self.arm_x = 1.6001
-        self.arm_y = 3.3999
 
     def set_gripper(self, arm):
         '''
@@ -55,7 +53,6 @@ class Kinematics:
             step_size: how much angle in degrees to move at each step, assume to be positive
         '''
         move_range = self.get_move_range(angle_range, step_size)
-        print(move_range)
         for i in move_range:
             # for joint_idx in joint_idxs:
             arm.go_to(joint_idx, np.radians(i))
@@ -85,19 +82,32 @@ class Kinematics:
                 self.inverse_kinematics(arm, const_corr, delta)
             self.set_gripper(arm)
 
-    def pick_up_cup(self, arm, curr_x, curr_y):
+    def pick_up_cup(self, arm, curr_x, curr_y, map_idx):
         '''
         Function to slowly approach the arm and grab it
         params:
             arm: arm object
             curr_x: current x position of the robot under odometry coordinates
             curr_y: current y position of the robot under odometry coordinates
+            map_idx: which map is in use. 1 for simple once, 2 for complex once.
         '''
+        # origin of two of the maps are different...
+        if map_idx == 1:
+            self.arm_x = 1.6001
+            self.arm_y = 3.3999
+            delta_theta = np.arctan2(curr_x - self.arm_x, self.arm_y - curr_y)
+            forward_cali = 0.28
+        elif map_idx == 2:
+            self.arm_x = -0.3999
+            self.arm_y = 1.6000
+            delta_theta = np.arctan2(curr_y - self.arm_y, curr_x - self.arm_x)
+            delta_theta += np.radians(5)
+            forward_cali = 0.30
+
         arm.open_gripper()
         self.time.sleep(5)
 
         # calculate delta theta with the robot arm
-        delta_theta = np.arctan2(curr_x - self.arm_x, self.arm_y - curr_y)
         print("delta_theta = %.3f" % (np.degrees(delta_theta)))
         arm.go_to(0, delta_theta)
 
@@ -110,7 +120,7 @@ class Kinematics:
         self.set_gripper(arm)
 
         # slowly move to the cup and grab it
-        self.step_inv_kinematics(arm, (self._x, -delta_dist+0.28), 0.001, "x", self._z)
+        self.step_inv_kinematics(arm, (self._x, -delta_dist+forward_cali), 0.001, "x", self._z)
         arm.close_gripper()
         self.time.sleep(10)
 
