@@ -12,7 +12,11 @@ There are two different configuration spaces, a simple one and a complex one.
 
 We have two different entry points in the program for these two configuration spaces. `finalproject_01.py` for the simple one, and `finalproject_02.py` for the complex one.
 
-## Required Packages
+## Prerequsites
+### Required software
+Please be sure to have [V-REP Pro Edu V3.5.0](http://www.coppeliarobotics.com/downloads.html) installed on your computer.
+
+### Required Packages
 `requirement.txt` contains all packages required to run this project. To ensure that the project runs without errors, we recommend using [anaconda](https://www.anaconda.com/) to create new virtual environment by running:
 ```bash
 conda create -n 445finalproject_yulun_shihong_zhaohang python=3.7
@@ -53,6 +57,6 @@ self.kinematics.go_to_level3(self.arm, map_idx = 2)
 ```
 
 ## Answer Videos
-Even though we have tried our best to minimize the randomness in our code, due to the unstable and probabilistic nature of Particle Filter and RRT algorithms, the result of the your running might vary a little. Therefore, under the `ans` folder, we have included some videos to demonstrate the correctness of our implementation.
+Even though we have tried our best to minimize the randomness in our code, due to the unstable and probabilistic nature of Particle Filter and RRT algorithms, the result of the your running might vary a little. Therefore, under the `ans` folder, **we have included some videos to demonstrate the correctness of our implementation.**
 
 We have one video for each configuration space and each shelf. `ans/simple` contains the videos for simple configuration space, and `ans/complex` contains the videos for complex configuration space.
