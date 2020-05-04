@@ -89,6 +89,23 @@ class Run:
             self.visualize()
             self.time.sleep(0.01)
 
+    def go_to_loc(self, goal_x, goal_y, base_speed):
+        '''
+        Function for the robot go to a position
+        '''
+        while True:
+            state = self.create.update()
+
+            if state is not None:
+                print("Goal: [%.3f, %.3f]" % (goal_x, goal_y))
+                self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
+                goal_theta = math.atan2(goal_y - self.odometry.y, goal_x - self.odometry.x)
+                output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
+                self.create.drive_direct(int(base_speed + output_theta), int(base_speed - output_theta))
+                distance = math.sqrt(math.pow(goal_x - self.odometry.x, 2) + math.pow(goal_y - self.odometry.y, 2))
+                if distance < 0.07:
+                    break
+
     def run(self):
 
         self.create.start()
@@ -165,18 +182,9 @@ class Run:
             old_y = self.odometry.y
             old_theta = self.odometry.theta
 
-            while True:
-                state = self.create.update()
+            self.go_to_loc(goal_x, goal_y, base_speed)
 
-                if state is not None:
 
-                    self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
-                    goal_theta = math.atan2(goal_y - self.odometry.y, goal_x - self.odometry.x)
-                    output_theta = self.pidTheta.update(self.odometry.theta, goal_theta, self.time.time())
-                    self.create.drive_direct(int(base_speed + output_theta), int(base_speed - output_theta))
-                    distance = math.sqrt(math.pow(goal_x - self.odometry.x, 2) + math.pow(goal_y - self.odometry.y, 2))
-                    if distance < 0.07:
-                        break
             self.sleep(0.01)
             self.pf.move_by(self.odometry.x - old_x, self.odometry.y - old_y, self.odometry.theta - old_theta)
             self.visualize()
@@ -229,10 +237,12 @@ class Run:
             # self.odometry.theta =
             # input("input: [{},{}, {}]".format(self.odometry.x, self.odometry.y, math.degrees(self.odometry.theta)))
         print("start grabing")
+        self.go_to_loc(x_goal[0]/100, 3 - x_goal[1]/100, base_speed) # attemp to go to the final location again after relocalication
         self.go_to_angle(0) # 0 odometry deg of robot changed
+        state = self.create.update()
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         print("Robot at [%.3f, %.3f, %.3f]" % (self.odometry.x, self.odometry.y, np.degrees(self.odometry.theta)))
         # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y, map_idx = 2)
-        self.kinematics.go_to_level0(self.arm)
+        self.kinematics.go_to_level3(self.arm, map_idx = 2)
         input("End")

@@ -172,7 +172,7 @@ class Kinematics:
         arm.open_gripper()
         self.time.sleep(5)
 
-    def go_to_level3(self, arm):
+    def go_to_level3(self, arm, map_idx = 1):
         # slowly move the arm up
         self.step_inv_kinematics(arm, (self._z, 0.65), 0.001, "z", self._x)
         self.time.sleep(10)
@@ -191,7 +191,10 @@ class Kinematics:
         # input("here")
 
         # uprise the gripper
-        self.step_go_to(arm, 5, (np.degrees(self.curr_theta5), 60), 1)
+        if map_idx == 1:
+            self.step_go_to(arm, 5, (np.degrees(self.curr_theta5), 60), 1)
+        elif map_idx == 2:
+            self.step_go_to(arm, 5, (np.degrees(self.curr_theta5), 45), 1)
 
         # input("Here")
 
