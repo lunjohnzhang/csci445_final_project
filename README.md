@@ -6,7 +6,7 @@ This project requires a iRobot roomba robot to do localization using Particle Fi
 ![alt text](intro.png)
 
 ## Configuration Space
-There are two different configuration spaces, a simple one and a complex one.
+There are two different configuration spaces, a **simplef(left)** one and a **complex(right)** one.
 
 ![alt text](configuration_space.png) ![alt text](configuration_space_2.png)
 
@@ -27,12 +27,12 @@ pip install -r requirement.txt
 ```
 
 ## Run our code
-To run the code in the simple configuration space (shown above), run the following:
+To run the code in the **simple configuration space** (shown above), run the following:
 ```bash
 python run.py --sim finalproject_01.py
 ```
 
-To run the code in the complex configuration space (shown above), run the following:
+To run the code in the **complex configuration space** (shown above), run the following:
 ```bash
 python run.py --sim finalproject_02.py
 ```
