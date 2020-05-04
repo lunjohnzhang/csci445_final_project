@@ -244,5 +244,5 @@ class Run:
         print("Robot at [%.3f, %.3f, %.3f]" % (self.odometry.x, self.odometry.y, np.degrees(self.odometry.theta)))
         # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y, map_idx = 2)
-        self.kinematics.go_to_level3(self.arm, map_idx = 2)
+        self.kinematics.go_to_level0(self.arm, map_idx = 2)
         input("End")

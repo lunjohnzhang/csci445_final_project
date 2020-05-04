@@ -250,5 +250,5 @@ class Run:
         self.odometry.update(state.leftEncoderCounts, state.rightEncoderCounts)
         # self.virtual_create.set_pose((self.odometry.x, self.odometry.y, 0.1), self.odometry.theta)
         self.kinematics.pick_up_cup(self.arm, self.odometry.x, self.odometry.y, map_idx = 1)
-        self.kinematics.go_to_level3(self.arm)
+        self.kinematics.go_to_level0(self.arm)
         input("End")
